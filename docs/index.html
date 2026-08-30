@@ -1,26 +1,42 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ONE DEV AI</title>
-<style>body{font-family:system-ui;background:#0a0a0a;color:#fff;max-width:700px;margin:auto;padding:16px}#chat{height:65vh;overflow:auto;border:1px solid #222;border-radius:12px;padding:12px;background:#111}.msg{margin:8px 0;padding:10px;border-radius:10px}.user{background:#2563eb;margin-left:15%}.ai{background:#1e1e1e}input{width:100%;padding:14px;border-radius:10px;border:1px solid #333;background:#141414;color:#fff;margin-top:10px}button{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:0;background:#2563eb;color:#fff;font-weight:bold}</style></head><body>
-<h1>🧠 ONE DEV AI</h1><p>Projet africain pour les devs - 100% GitHub Pages</p>
+<style>body{font-family:system-ui;background:#0a0a0a;color:#fff;max-width:700px;margin:auto;padding:16px}#chat{height:62vh;overflow:auto;border:1px solid #222;border-radius:12px;padding:12px;background:#111}.msg{margin:8px 0;padding:10px;border-radius:10px;white-space:pre-wrap}.user{background:#2563eb;margin-left:12%}.ai{background:#1e1e1e}.sys{color:#8f8;font-size:.85em}input{width:100%;padding:14px;border-radius:10px;border:1px solid #333;background:#141414;color:#fff;margin-top:10px}button{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:0;background:#2563eb;color:#fff;font-weight:bold}</style></head><body>
+<h1>🧠 ONE DEV AI</h1><p>Projet africain - Modèle + Recherche Web Live</p>
 <div id="chat"></div>
-<input id="q" placeholder="Tape: bsr, ton nom, que peux tu faire, python...">
-<button id="send">Envoyer</button>
+<input id="q" placeholder="Ex: qui est le président du Faso?">
+<button id="send">Envoyer</button><label><input type="checkbox" id="web" checked> 🌐 Recherche web activée</label>
 <script>
 let chat=document.getElementById('chat');
 function add(t,c='ai'){let d=document.createElement('div');d.className='msg '+c;d.textContent=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
-add("Salut ! Je suis One Dev AI. Tape bsr, ton nom, python, pytorch...","ai");
-function getRep(q){
+add("Salut! Je suis One Dev AI. Pose-moi n'importe quelle question, je cherche sur le web si besoin.","ai");
+function localRep(q){
  q=q.toLowerCase();
- if(q.includes('bsr')||q.includes('bonjour')||q.includes('salut')||q.includes('cc')) return "Bonjour ! 👋 Je suis One Dev AI, projet africain pour aider les développeurs. Comment je peux t'aider ?";
- if(q.includes('nom')||q.includes('appelle')||q.includes('qui es tu')) return "Je m'appelle One Dev AI. Je suis un petit modèle Transformer créé pour aider les devs africains à apprendre l'IA.";
- if(q.includes('que fais')||q.includes('que peux')||q.includes('faire')||q.includes('aide')) return "Je peux :\n- Expliquer Python\n- Expliquer Pytorch / Transformer / Attention\n- Aider à coder\n- Chercher sur internet";
- if(q.includes('python')) return "Python est le langage numéro 1 en IA. Avec Pytorch tu peux créer des réseaux neuronaux. Exemple: torch.nn.Transformer";
- if(q.includes('pytorch')||q.includes('transformer')) return "Pytorch permet de créer des IA. Un Transformer utilise l'Attention pour comprendre le texte. C'est ce que mon code utilise !";
- if(q.includes('merci')) return "De rien ! Force à toi 💪";
- return "Je suis en apprentissage. Essaie : 'bonjour', 'ton nom', 'que peux tu faire', 'explique python', 'explique pytorch'";
+ if(q.match(/bsr|bonjour|salut|cc/)) return "Bonjour! 👋 Je suis One Dev AI, projet africain pour les devs.";
+ if(q.includes('nom')||q.includes('appelle')) return "Je m'appelle One Dev AI, créé pour aider les développeurs africains.";
+ if(q.includes('que peux')||q.includes('faire')) return "Je peux expliquer Python, Pytorch, et chercher des infos récentes sur le web.";
+ if(q.includes('python')) return "Python est le langage de l'IA. Avec Pytorch tu crées des réseaux neuronaux.";
+ return null;
 }
-document.getElementById('send').onclick=()=>{
- let i=document.getElementById('q');let q=i.value.trim();if(!q)return;i.value="";add(q,'user');setTimeout(()=>add(getRep(q),'ai'),300);
-};
-document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('send').click()});
+async function searchWeb(q){
+ try{
+  let r=await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&pretty=1`);
+  let j=await r.json();
+  if(j.AbstractText) return j.AbstractText;
+  if(j.RelatedTopics && j.RelatedTopics[0] && j.RelatedTopics[0].Text) return j.RelatedTopics[0].Text;
+  return "";
+ }catch(e){return "";}
+}
+async function send(){
+ let i=document.getElementById('q');let q=i.value.trim();if(!q)return;i.value="";add(q,'user');
+ let loc=localRep(q);
+ if(loc){add(loc,'ai');return;}
+ if(document.getElementById('web').checked){
+  add("🌐 Recherche en cours...","sys");
+  let web=await searchWeb(q);
+  if(web){add("D'après le web : "+web,'ai');return;}
+ }
+ add("Je n'ai pas trouvé sur le web, mais je peux t'expliquer Python, Pytorch, Transformer si tu veux!",'ai');
+}
+document.getElementById('send').onclick=send;
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
 </script></body></html>
