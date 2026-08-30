@@ -1,87 +1,46 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ONE DEV AI - Intelligent</title>
-<style>body{font-family:system-ui;background:#0a0a0a;color:#fff;max-width:720px;margin:auto;padding:16px}#chat{height:62vh;overflow:auto;border:1px solid #222;border-radius:12px;padding:12px;background:#111}.msg{margin:8px 0;padding:12px;border-radius:12px;white-space:pre-wrap;line-height:1.5}.user{background:#2563eb;margin-left:12%}.ai{background:#1e1e1e;border-left:3px solid #2563eb}.sys{color:#8f8;font-size:.85em}.learn{color:#fbbf24;font-size:.85em}input{width:100%;padding:14px;border-radius:10px;border:1px solid #333;background:#141414;color:#fff;margin-top:10px}button{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:0;background:#2563eb;color:#fff;font-weight:bold}</style></head><body>
-<h1>🧠 ONE DEV AI - Version Intelligente</h1><p>IA Africaine • Base de connaissances + Wikipedia + Mémoire</p>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ONE DEV AI - Tout en Un</title>
+<style>body{font-family:system-ui;background:#0a0a0a;color:#fff;max-width:750px;margin:auto;padding:12px}#chat{height:58vh;overflow:auto;border:1px solid #222;border-radius:12px;padding:12px;background:#111}.msg{margin:10px 0;padding:12px;border-radius:12px;white-space:pre-wrap}.user{background:#2563eb;margin-left:10%}.ai{background:#1e1e1e;border-left:3px solid #2563eb}img.gen{max-width:100%;border-radius:12px;margin-top:8px;border:1px solid #333}canvas{max-width:100%;border-radius:12px;margin-top:8px}#bar{display:flex;gap:6px;margin-top:10px}input{flex:1;padding:12px;border-radius:10px;border:1px solid #333;background:#141414;color:#fff}button{padding:12px;border-radius:10px;border:0;background:#2563eb;color:#fff;font-weight:bold}</style></head><body>
+<h1>🧠 ONE DEV AI - Tout en Un</h1><p>Chat + Générateur d'images + Embellisseur photo</p>
 <div id="chat"></div>
-<input id="q" placeholder="Pose n'importe quelle question...">
-<button id="send">Envoyer</button>
+<div id="bar"><input id="q" placeholder="Ex: génère une photo d'un lion à Boromo"><button id="send">Envoyer</button></div>
+<input type="file" id="upload" accept="image/*" style="margin-top:8px">
+<div><button onclick="makeBeautiful()">✨ Rendre Belle</button><button onclick="hd()">🔍 HD x2</button><button onclick="download()">💾 Télécharger</button></div>
+<canvas id="c" style="display:none"></canvas>
 <script>
-const chat=document.getElementById('chat');
-function add(t,c='ai'){let d=document.createElement('div');d.className='msg '+c;d.textContent=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+let chat=document.getElementById('chat'), canvas=document.getElementById('c'), ctx=canvas.getContext('2d'), img=new Image();
+function add(t,c='ai',isHtml=false){let d=document.createElement('div');d.className='msg '+c;if(isHtml)d.innerHTML=t;else d.textContent=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;}
 
-// --- BASE DE CONNAISSANCES LOCALE (cerveau local) ---
-let KNOWLEDGE=[
-{q:"président burkina faso", a:"Le président actuel du Burkina Faso est le Capitaine Ibrahim Traoré, arrivé au pouvoir le 30 septembre 2022. C'est un militaire et chef de la transition."},
-{q:"président ghana", a:"Le président actuel du Ghana est John Dramani Mahama, revenu au pouvoir le 7 janvier 2025."},
-{q:"président afrique", a:"L'Afrique n'a pas un seul président, c'est 54 pays. Chaque pays a son président. Ex: Burkina Faso = Ibrahim Traoré, Ghana = John Mahama, Afrique du Sud = Cyril Ramaphosa."},
-{q:"qui a créé facebook", a:"Facebook a été créé par Mark Zuckerberg en 2004 à Harvard avec Eduardo Saverin, Dustin Moskovitz et Chris Hughes. Aujourd'hui ça appartient à Meta."},
-{q:"qui a créé google", a:"Google a été créé par Larry Page et Sergey Brin en 1998, deux étudiants de Stanford."},
-{q:"comment facebook gagne argent", a:"Facebook gagne de l'argent grâce à la publicité : 1) Les entreprises paient pour montrer des pubs, 2) Facebook vend de la pub ciblée grâce à tes centres d'intérêt, 3) Il gagne aussi avec Instagram, WhatsApp Business. Toi tu utilises gratuit, mais ton attention est vendue aux annonceurs."},
-{q:"one dev ai", a:"ONE DEV AI est un projet africain créé par toi depuis Boromo, Burkina Faso. Objectif: aider les développeurs africains à apprendre l'IA avec peu de moyens, 100% sur téléphone et GitHub Pages."},
-{q:"python", a:"Python est le langage le plus utilisé en IA. Simple et puissant. Avec Pytorch tu peux créer des réseaux neuronaux: import torch"},
-{q:"pytorch transformer", a:"Pytorch est une librairie IA. Un Transformer est un modèle qui utilise le mécanisme d'Attention pour comprendre les phrases. C'est ce qui fait ChatGPT."},
-{q:"bonjour bsr salut", a:"Bonjour! 👋 Je suis ONE DEV AI, ton assistant africain. Je peux répondre sur les présidents, la tech, Facebook, Python, et chercher sur Wikipédia."}
-];
+let KNOWLEDGE=[{q:"président burkina",a:"Président Burkina Faso: Capitaine Ibrahim Traoré (depuis 30 sept 2022)."}, {q:"président tiktok",a:"TikTok n'a pas de président. PDG: Shou Zi Chew. Maison mère ByteDance fondée par Zhang Yiming."}, {q:"bonjour",a:"Bonjour! 👋 Je suis ONE DEV AI. Tape: 'génère une photo de...' pour créer une image, ou upload une photo pour la rendre belle."}];
+function normalize(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function findKnowledge(q){let nq=normalize(q);for(let k of KNOWLEDGE){if(nq.includes(normalize(k.q)))return k;}return null;}
 
-// Charger ce que l'utilisateur a appris à l'IA
-let saved=localStorage.getItem('one_dev_knowledge');
-if(saved){ KNOWLEDGE=KNOWLEDGE.concat(JSON.parse(saved)); }
+async function searchWiki(q){try{let u=`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`;let r=await fetch(u);let j=await r.json();if(!j.query.search.length)return "";let t=j.query.search[0].title;let r2=await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t)}`);let j2=await r2.json();return j2.extract||"";}catch(e){return "";}}
 
-function normalize(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').trim()}
+function isImageGen(q){let n=normalize(q);return n.startsWith('genere')||n.startsWith('cree une image')||n.startsWith('creer une image')||n.includes('photo de')||n.includes('image de')||n.includes('dessine')||n.startsWith('genere une photo');}
 
-function findKnowledge(q){
- let nq=normalize(q);
- let best=null, bestScore=0;
- for(let k of KNOWLEDGE){
-  let nk=normalize(k.q);
-  let score=0;
-  let words=nq.split(' ');
-  for(let w of words){ if(w.length>2 && nk.includes(w)) score++; }
-  if(score>bestScore){bestScore=score; best=k;}
- }
- return bestScore>=1? best : null;
+function generateImage(prompt){
+ let clean=prompt.replace(/génère|crée|une photo de|une image de|dessine/gi,'').trim();
+ if(!clean) clean=prompt;
+ let url=`https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random()*10000)}`;
+ add(`🎨 Je génère : "${clean}"<br><img class="gen" src="${url}" onload="this.scrollIntoView()">`,'ai',true);
 }
 
-async function searchWikipedia(q){
- try{
-  let searchUrl=`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`;
-  let r=await fetch(searchUrl);
-  let j=await r.json();
-  if(!j.query.search.length) return "";
-  let title=j.query.search[0].title;
-  // Prendre le résumé complet, pas juste snippet
-  let summaryUrl=`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-  let r2=await fetch(summaryUrl);
-  let j2=await r2.json();
-  if(j2.extract) return `${j2.title} : ${j2.extract}\nSource: Wikipédia`;
-  return `${j.query.search[0].title} : ${j.query.search[0].snippet.replace(/<[^>]*>/g,'')}`;
- }catch(e){return "";}
-}
+document.getElementById('upload').onchange=e=>{
+ let f=e.target.files[0]; if(!f)return; img.src=URL.createObjectURL(f);
+ img.onload=()=>{canvas.style.display='block';canvas.width=img.width;canvas.height=img.height;ctx.drawImage(img,0,0); add('📸 Photo chargée! Clique "Rendre Belle" ou "HD x2"','ai');}
+};
+function makeBeautiful(){ctx.filter='brightness(1.1) contrast(1.15) saturate(1.25)';ctx.drawImage(canvas,0,0);ctx.filter='none';add('✨ Photo rendue plus belle!','ai');}
+function hd(){let w=canvas.width,h=canvas.height;let tmp=document.createElement('canvas');tmp.width=w;tmp.height=h;tmp.getContext('2d').drawImage(canvas,0,0);canvas.width=w*2;canvas.height=h*2;ctx.imageSmoothingQuality='high';ctx.drawImage(tmp,0,0,w*2,h*2);add('🔍 HD x2 appliqué!','ai');}
+function download(){let a=document.createElement('a');a.download='one-dev-ai.jpg';a.href=canvas.toDataURL('image/jpeg',0.9);a.click();}
 
-let history=[];
 async function send(){
- let input=document.getElementById('q');let q=input.value.trim();if(!q)return;input.value="";add(q,'user');history.push(q);
- // Mode apprentissage : "apprends que..."
- if(q.toLowerCase().startsWith('apprends que')){
-  let parts=q.substring(12).split('=');
-  if(parts.length==2){
-   let newK={q:parts[0].trim(), a:parts[1].trim()};
-   KNOWLEDGE.push(newK);
-   let toSave=JSON.parse(localStorage.getItem('one_dev_knowledge')||'[]'); toSave.push(newK); localStorage.setItem('one_dev_knowledge', JSON.stringify(toSave));
-   add(`✅ Merci! J'ai appris : "${newK.q}" = "${newK.a}"`,'ai'); return;
-  }
- }
- // 1. Cherche dans cerveau local
- let local=findKnowledge(q);
- if(local){add(local.a,'ai'); return;}
- // 2. Cherche sur Wikipédia
- add("🌐 Je cherche dans mon cerveau + Wikipédia...","sys");
- let wiki=await searchWikipedia(q);
- if(wiki){add(wiki,'ai'); return;}
- // 3. Fallback intelligent
- add("Je n'ai pas trouvé la réponse exacte. Essaie de reformuler ou apprends-moi avec : apprends que [question] = [réponse]\nEx: apprends que président du Faso = Ibrahim Traoré",'ai');
+ let i=document.getElementById('q');let q=i.value.trim();if(!q)return;i.value="";add(q,'user');
+ if(isImageGen(q)){generateImage(q);return;}
+ let k=findKnowledge(q); if(k){add(k.a,'ai');return;}
+ add('🌐 Recherche...','ai'); let w=await searchWiki(q); if(w)add(w,'ai'); else add('Je n\'ai pas trouvé. Essaie "génère une photo de..." ou upload une photo.','ai');
 }
 document.getElementById('send').onclick=send;
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
-add("Salut! Je suis ONE DEV AI intelligent. J'ai maintenant une mémoire, une base de connaissances, et je sais chercher sur Wikipédia. Tu peux même m'apprendre!",'ai');
+add('Salut! Je suis ton outil parfait :<br>1️⃣ Tape "génère une photo d\'un lion à Boromo" -> je génère<br>2️⃣ Upload une photo -> je la rends belle<br>3️⃣ Pose une question -> je cherche','ai',true);
 </script></body></html>
