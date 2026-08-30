@@ -1,8 +1,24 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ONE DEV AI</title><style>body{font-family:system-ui;background:#0a0a0a;color:#ededed;max-width:760px;margin:0 auto;padding:18px}#chat{height:62vh;overflow-y:auto;border:1px solid #222;border-radius:14px;padding:14px;background:#111}.msg{margin:10px 0;padding:10px 14px;border-radius:12px;white-space:pre-wrap}.user{background:#2563eb;margin-left:15%}.ai{background:#1e1e1e;border:1px solid #252525}.sys{background:#0e1a0e;border:1px dashed #2a4a2a;color:#8fbf8f;font-size:.9em}input#q{width:100%;padding:14px;border-radius:12px;border:1px solid #2a2a2a;background:#141414;color:#fff;margin-top:14px}</style></head><body><h1>🧠 ONE DEV AI</h1><p>Projet africain - Petit modèle + Recherche Web - 100% GitHub Pages</p><div id="chat"></div><input id="q" placeholder="Tape ta question... ex: bonjour"/><label><input type="checkbox" id="web" checked> 🌐 Recherche web</label><script>
-let vocab=null,char_to_id=null,id_to_char=null;
-fetch('./model.json').then(r=>r.json()).then(m=>{vocab=m.vocab;char_to_id=m.char_to_id;id_to_char=m.id_to_char;addMsg("✅ Modèle chargé. Je suis One Dev AI !","ai")});
-function addMsg(t,w='ai'){let d=document.createElement('div');d.className='msg '+w;d.textContent=t;document.getElementById('chat').appendChild(d)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ONE DEV AI</title><style>body{font-family:system-ui;background:#0a0a0a;color:#ededed;max-width:760px;margin:0 auto;padding:18px}#chat{height:65vh;overflow-y:auto;border:1px solid #222;border-radius:14px;padding:14px;background:#111}.msg{margin:10px 0;padding:12px 14px;border-radius:12px;white-space:pre-wrap;line-height:1.5}.user{background:#2563eb;margin-left:12%}.ai{background:#1e1e1e;border:1px solid #252525}.sys{background:#0e1a0e;border:1px dashed #2a4a2a;color:#8fbf8f;font-size:.9em}input#q{width:100%;padding:14px;border-radius:12px;border:1px solid #2a2a2a;background:#141414;color:#fff;margin-top:14px}button{width:100%;margin-top:10px;padding:12px;border-radius:12px;border:none;background:#2563eb;color:#fff;font-weight:bold}</style></head><body><h1>🧠 ONE DEV AI</h1><p>Projet Africain - Aide les développeurs - 100% GitHub Pages</p><div id="chat"></div><input id="q" placeholder="Ex: bonjour, que peux-tu faire ? explique moi python"/><button id="send">Envoyer</button><label style="display:block;margin-top:10px"><input type="checkbox" id="web" checked> 🌐 Recherche web</label><script>
+const chat=document.getElementById('chat');
+function add(t,w='ai'){let d=document.createElement('div');d.className='msg '+w;d.textContent=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+add("✅ Salut ! Je suis One Dev AI, projet africain. Pose-moi une question sur le code ou la prog !","ai");
+function reponseLocale(q){
+ q=q.toLowerCase();
+ if(q.includes('bonjour')||q.includes('bsr')||q.includes('salut')) return "Bonjour ! 👋 Je suis One Dev AI, une intelligence artificielle faite pour aider les développeurs africains. Comment puis-je t'aider ?";
+ if(q.includes('nom')||q.includes('appelle')) return "Mon nom est One Dev AI. Je suis un petit modèle Transformer créé pour aider les devs africains à apprendre l'IA et la programmation.";
+ if(q.includes('que peux')||q.includes('faire')||q.includes('aide')) return "Je peux :\n• Expliquer du code Python\n• Expliquer Pytorch et les réseaux neuronaux\n• Aider à programmer\n• Rechercher des infos récentes sur internet\n• Apprendre progressivement";
+ if(q.includes('python')) return "Python est un langage de programmation très utilisé en IA. Il permet de créer des réseaux neuronaux avec Pytorch. Veux-tu un exemple de code ?";
+ if(q.includes('pytorch')||q.includes('transformer')||q.includes('attention')) return "Pytorch permet de créer des réseaux neuronaux. Un Transformer utilise un mécanisme appelé Attention pour comprendre le texte. Mon code utilise ça !";
+ if(q.includes('merci')) return "De rien ! N'hésite pas si tu as d'autres questions 🙏";
+ return null;
+}
 async function searchWeb(q){try{let r=await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json`);let j=await r.json();return j.AbstractText||j.RelatedTopics?.[0]?.Text||""}catch{return""}}
-function generer(p){if(!vocab)return"Je suis One Dev AI, je peux aider à coder et chercher sur internet.";let o="";let ids=[...p.toLowerCase()].map(c=>char_to_id[c]).filter(x=>x!==void 0);for(let i=0;i<150;i++){let nid=ids[ids.length-1]||0;if(Math.random()<0.2)nid=Math.floor(Math.random()*vocab.length);o+=id_to_char[nid]||id_to_char[""+nid]||" ";ids.push(nid);if(o.includes("\\n")&&o.length>60)break}return o}
-document.getElementById('q').addEventListener('keydown',async e=>{if(e.key!=='Enter')return;let q=e.target.value;e.target.value="";addMsg(q,'user');let web="";if(document.getElementById('web').checked){addMsg("🌐 Recherche...","sys");web=await searchWeb(q);if(web)addMsg("📄 "+web.slice(0,180),"sys")}let rep=web?`D'après web: ${web}\\n\\n`+generer(q):generer(q);addMsg(rep,'ai')});
+async function send(){
+ let input=document.getElementById('q');let q=input.value.trim();if(!q)return;input.value="";add(q,'user');
+ let local=reponseLocale(q);
+ if(local){add(local,'ai');return;}
+ if(document.getElementById('web').checked){add("🌐 Recherche web...","sys");let web=await searchWeb(q);if(web){add("📄 Trouvé: "+web,"sys");add(`D'après internet: ${web}\n\nJe peux t'expliquer plus si tu veux !`,'ai');return;}}
+ add("Je suis encore en apprentissage. Mon objectif est d'aider les développeurs africains. Pose une question sur Python, Pytorch, ou active la recherche web pour une info récente !",'ai');
+}
+document.getElementById('send').onclick=send;document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
 </script></body></html>
