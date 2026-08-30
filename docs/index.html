@@ -1,41 +1,48 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ONE DEV AI</title>
 <style>body{font-family:system-ui;background:#0a0a0a;color:#fff;max-width:700px;margin:auto;padding:16px}#chat{height:62vh;overflow:auto;border:1px solid #222;border-radius:12px;padding:12px;background:#111}.msg{margin:8px 0;padding:10px;border-radius:10px;white-space:pre-wrap}.user{background:#2563eb;margin-left:12%}.ai{background:#1e1e1e}.sys{color:#8f8;font-size:.85em}input{width:100%;padding:14px;border-radius:10px;border:1px solid #333;background:#141414;color:#fff;margin-top:10px}button{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:0;background:#2563eb;color:#fff;font-weight:bold}</style></head><body>
-<h1>🧠 ONE DEV AI</h1><p>Projet africain - Modèle + Recherche Web Live</p>
+<h1>🧠 ONE DEV AI</h1><p>Projet africain - Modèle + Recherche Web (Wikipedia)</p>
 <div id="chat"></div>
-<input id="q" placeholder="Ex: qui est le président du Faso?">
-<button id="send">Envoyer</button><label><input type="checkbox" id="web" checked> 🌐 Recherche web activée</label>
+<input id="q" placeholder="Ex: qui est le président du Burkina Faso?">
+<button id="send">Envoyer</button>
 <script>
 let chat=document.getElementById('chat');
 function add(t,c='ai'){let d=document.createElement('div');d.className='msg '+c;d.textContent=t;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
-add("Salut! Je suis One Dev AI. Pose-moi n'importe quelle question, je cherche sur le web si besoin.","ai");
+add("Salut! Je suis One Dev AI. Teste: président du Faso, Ghana, Python...","ai");
 function localRep(q){
  q=q.toLowerCase();
- if(q.match(/bsr|bonjour|salut|cc/)) return "Bonjour! 👋 Je suis One Dev AI, projet africain pour les devs.";
- if(q.includes('nom')||q.includes('appelle')) return "Je m'appelle One Dev AI, créé pour aider les développeurs africains.";
- if(q.includes('que peux')||q.includes('faire')) return "Je peux expliquer Python, Pytorch, et chercher des infos récentes sur le web.";
- if(q.includes('python')) return "Python est le langage de l'IA. Avec Pytorch tu crées des réseaux neuronaux.";
+ if(q.match(/bsr|bonjour|salut|cc|bjr/)) return "Bonjour! 👋 Je suis One Dev AI, projet africain pour les devs.";
+ if(q.includes('nom')) return "Je m'appelle One Dev AI.";
+ if(q.includes('python')) return "Python = langage de l'IA. Avec Pytorch tu crées des IA.";
  return null;
 }
 async function searchWeb(q){
+ // 1. DuckDuckGo
  try{
   let r=await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&pretty=1`);
   let j=await r.json();
   if(j.AbstractText) return j.AbstractText;
-  if(j.RelatedTopics && j.RelatedTopics[0] && j.RelatedTopics[0].Text) return j.RelatedTopics[0].Text;
-  return "";
- }catch(e){return "";}
+ }catch(e){}
+ // 2. Wikipédia FR - marche pour les présidents
+ try{
+  let url=`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`;
+  let r=await fetch(url);
+  let j=await r.json();
+  if(j.query && j.query.search && j.query.search[0]){
+   let s=j.query.search[0];
+   return `${s.title} : ${s.snippet.replace(/<[^>]*>/g,'')}\n(Source: Wikipédia)`;
+  }
+ }catch(e){}
+ return "";
 }
 async function send(){
  let i=document.getElementById('q');let q=i.value.trim();if(!q)return;i.value="";add(q,'user');
  let loc=localRep(q);
  if(loc){add(loc,'ai');return;}
- if(document.getElementById('web').checked){
-  add("🌐 Recherche en cours...","sys");
-  let web=await searchWeb(q);
-  if(web){add("D'après le web : "+web,'ai');return;}
- }
- add("Je n'ai pas trouvé sur le web, mais je peux t'expliquer Python, Pytorch, Transformer si tu veux!",'ai');
+ add("🌐 Recherche sur Wikipédia...","sys");
+ let web=await searchWeb(q);
+ if(web) add(web,'ai');
+ else add("Pas trouvé. Essaie avec d'autres mots, ex: 'Burkina Faso président' ou 'Ghana président'","ai");
 }
 document.getElementById('send').onclick=send;
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
